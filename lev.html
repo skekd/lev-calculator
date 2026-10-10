@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>산업환기 국소배기장치(LEV) 필요환기량 계산기</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Pretendard', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col justify-between">
+
+    <header class="bg-slate-900 text-white shadow-md">
+        <div class="max-w-3xl mx-auto px-4 py-5 flex flex-col sm:flex-row justify-between items-center">
+            <div>
+                <h1 class="text-xl font-bold flex items-center gap-2">
+                    <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                    산업환기 LEV 필요환기량 계산기
+                </h1>
+                <p class="text-slate-400 text-xs mt-1">Dalla Valle 후드 형식별 배풍량 산정 툴</p>
+            </div>
+            <div class="mt-2 sm:mt-0 bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-lg text-xs text-slate-300">
+                <span class="font-semibold text-emerald-400">Dalla Valle Table</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-3xl mx-auto px-4 py-6 flex-grow w-full space-y-6">
+        
+        <!-- Input Form Card -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 md:p-6 space-y-5">
+            <h2 class="text-base font-semibold text-slate-900 pb-2 border-b border-slate-100 flex items-center gap-2">
+                <span class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-bold">1</span>
+                후드 형식 및 변수 입력
+            </h2>
+
+            <!-- Hood Type Selection -->
+            <div class="space-y-1.5">
+                <label class="block text-sm font-medium text-slate-700">후드 형식 선택</label>
+                <select id="hoodType" onchange="onHoodTypeChange()" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 font-medium text-sm">
+                    <optgroup label="부스식 (오염원 내부)">
+                        <option value="booth">1. 부스식 (Booth)</option>
+                    </optgroup>
+                    <optgroup label="외부식 (오염원 외부)">
+                        <option value="plain">2. 외부식 일반 개구부 (Plain Opening)</option>
+                        <option value="flanged">3. 외부식 플랜지 개구부 (Flanged Opening)</option>
+                        <option value="slot">4. 슬로트형 (Slot, W/L ≤ 0.2)</option>
+                        <option value="flangedSlot">5. 플랜지 슬로트형 (Flanged Slot, W/L ≤ 0.2)</option>
+                        <option value="plainMultipleSlot">6. 다중 슬롯 일반형 (Plain Multiple Slot)</option>
+                        <option value="flangedMultipleSlot">7. 다중 슬롯 플랜지형 (Flanged Multiple Slot)</option>
+                    </optgroup>
+                    <optgroup label="캐노피식">
+                        <option value="canopy">8. 캐노피식 (Canopy - 상승기류)</option>
+                    </optgroup>
+                </select>
+            </div>
+
+            <div id="formulaCard" class="bg-emerald-50 border border-emerald-200 rounded-xl p-3.5 flex flex-col gap-0.5">
+                <span class="text-[11px] font-bold text-emerald-700 uppercase tracking-wider">적용 산식 (Dalla Valle)</span>
+                <div id="formulaText" class="text-emerald-950 font-mono font-bold text-sm">Q = V × W × H</div>
+            </div>
+
+            <!-- Shape Selection (Rectangular / Circular for External Hoods) -->
+            <div id="shapeSection" class="hidden space-y-1.5">
+                <label class="block text-sm font-medium text-slate-700">개구부 형상 선택</label>
+                <div class="grid grid-cols-2 gap-3">
+                    <label class="flex items-center gap-2 p-3 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition">
+                        <input type="radio" name="hoodShape" value="rect" checked onchange="renderInputs()" class="text-emerald-600 focus:ring-emerald-500">
+                        <span class="text-xs font-semibold text-slate-700">사각형 (Rectangular)</span>
+                    </label>
+                    <label class="flex items-center gap-2 p-3 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition">
+                        <input type="radio" name="hoodShape" value="circle" onchange="renderInputs()" class="text-emerald-600 focus:ring-emerald-500">
+                        <span class="text-xs font-semibold text-slate-700">원형 (Circular)</span>
+                    </label>
+                </div>
+            </div>
+
+            <div id="dynamicInputs" class="space-y-4 pt-1">
+                <!-- Dynamically injected inputs -->
+            </div>
+
+            <!-- Calculate Button -->
+            <button type="button" onclick="calculateVentilation()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 px-6 rounded-xl shadow-sm transition flex items-center justify-center gap-2 text-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                필요환기량 계산하기
+            </button>
+        </div>
+
+        <div id="resultCard" class="bg-slate-900 text-white rounded-2xl p-6 shadow-md space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">산정 결과 요약</span>
+                <span class="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-full font-semibold">Precision: 0.1</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="bg-slate-800/80 border border-slate-700/60 p-4 rounded-xl text-center">
+                    <span class="text-[11px] font-medium text-slate-400 block mb-1">분당 배풍량 (Q)</span>
+                    <div class="text-3xl font-extrabold text-emerald-400"><span id="resMin">0.0</span></div>
+                    <span class="text-xs text-slate-400 font-medium">m³/min</span>
+                </div>
+
+                <div class="bg-slate-800/80 border border-slate-700/60 p-4 rounded-xl text-center">
+                    <span class="text-[11px] font-medium text-slate-400 block mb-1">시간당 배풍량 (참고)</span>
+                    <div class="text-2xl font-bold text-slate-200"><span id="resHour">0.0</span></div>
+                    <span class="text-xs text-slate-400 font-medium">m³/h</span>
+                </div>
+            </div>
+
+            <div id="subResult" class="text-xs text-slate-400 pt-2 border-t border-slate-800/80 text-center">
+                변수를 입력하고 계산하기 버튼을 누르세요.
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="bg-white border-t border-slate-200 py-4 mt-8">
+        <div class="max-w-3xl mx-auto px-4 text-center text-xs text-slate-500">
+            산업환기 국소배기장치 설계 가이드 (Dalla Valle 표준)
+        </div>
+    </footer>
+
+    <script>
+        const hoodData = {
+            booth: { name: "부스식 (Booth)", formula: "Q = V × W × H", shape: false },
+            plain: { name: "외부식 일반 개구부", formula: "Q = V(10X² + A)", shape: true },
+            flanged: { name: "외부식 플랜지 개구부", formula: "Q = 0.75V(10X² + A)", shape: true },
+            slot: { name: "슬로트형", formula: "Q = 3.7 × L × X × V", shape: false },
+            flangedSlot: { name: "플랜지 슬로트형", formula: "Q = 2.6 × L × X × V", shape: false },
+            plainMultipleSlot: { name: "다중 슬롯 일반형", formula: "Q = V(10X² + A)", shape: true },
+            flangedMultipleSlot: { name: "다중 슬롯 플랜지형", formula: "Q = 0.75V(10X² + A)", shape: true },
+            canopy: { name: "캐노피식", formula: "Q = 1.4 × P × D × V", shape: false }
+        };
+
+        function onHoodTypeChange() {
+            const type = document.getElementById('hoodType').value;
+            const config = hoodData[type];
+            document.getElementById('formulaText').innerText = config.formula;
+
+            const shapeSection = document.getElementById('shapeSection');
+            if (config.shape) {
+                shapeSection.classList.remove('hidden');
+            } else {
+                shapeSection.classList.add('hidden');
+            }
+            renderInputs();
+        }
+
+        function renderInputs() {
+            const type = document.getElementById('hoodType').value;
+            const config = hoodData[type];
+            const container = document.getElementById('dynamicInputs');
+            container.innerHTML = '';
+
+            let fields = [];
+
+            // 공통 제어속도
+            fields.push({ id: 'vc', label: '제어속도 (V)', unit: 'm/s', default: '0.5', desc: '후드 개구면 또는 발생원 위치 속도' });
+
+            if (type === 'booth') {
+                fields.push({ id: 'w', label: '가로 길이 (W)', unit: 'm', default: '1.0', desc: '후드 개구면 가로 크기' });
+                fields.push({ id: 'h', label: '높이 (H)', unit: 'm', default: '1.0', desc: '후드 개구면 높이' });
+            } else if (config.shape) {
+                fields.push({ id: 'x', label: '후드-발생원 거리 (X)', unit: 'm', default: '0.5', desc: '개구면에서 발생원까지의 거리' });
+                const shape = document.querySelector('input[name="hoodShape"]:checked').value;
+                if (shape === 'rect') {
+                    fields.push({ id: 'w', label: '개구면 가로 (W)', unit: 'm', default: '0.8', desc: '후드 개구부 가로' });
+                    fields.push({ id: 'h', label: '개구면 세로 (H)', unit: 'm', default: '0.6', desc: '후드 개구부 세로' });
+                } else {
+                    fields.push({ id: 'd', label: '개구면 직경 (D)', unit: 'm', default: '0.7', desc: '원형 개구부 지름' });
+                }
+            } else if (type === 'slot' || type === 'flangedSlot') {
+                fields.push({ id: 'l', label: '슬로트 총 길이 (L)', unit: 'm', default: '1.5', desc: '슬로트 개구부 총 길이' });
+                fields.push({ id: 'x', label: '발생원 거리 (X)', unit: 'm', default: '0.4', desc: '슬로트에서 오염원까지의 거리' });
+            } else if (type === 'canopy') {
+                fields.push({ id: 'p', label: '개구부 둘레 길이 (P)', unit: 'm', default: '3.0', desc: '캐노피 하단 테두리 둘레' });
+                fields.push({ id: 'd', label: '발생원 거리 (D)', unit: 'm', default: '0.8', desc: '발생원과 후드 간의 수직 거리' });
+            }
+
+            fields.forEach(f => {
+                const div = document.createElement('div');
+                div.className = 'space-y-1';
+                div.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <label for="${f.id}" class="text-sm font-medium text-slate-700">${f.label}</label>
+                        <span class="text-xs text-slate-600 font-medium">${f.unit}</span>
+                    </div>
+                    <input type="number" step="any" id="${f.id}" value="${f.default}" 
+                        class="w-full bg-slate-50 border border-slate-300 rounded-xl px-4 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium text-sm">
+                    <p class="text-[11px] text-slate-600">${f.desc}</p>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function calculateVentilation() {
+            const type = document.getElementById('hoodType').value;
+            const config = hoodData[type];
+            const vc = parseFloat(document.getElementById('vc').value);
+
+            if (isNaN(vc) || vc < 0) {
+                alert('유효한 제어속도(V)를 입력해주세요.');
+                return;
+            }
+
+            let qMin = 0;
+            let subInfo = '';
+
+            if (type === 'booth') {
+                const w = parseFloat(document.getElementById('w').value);
+                const h = parseFloat(document.getElementById('h').value);
+                if (isNaN(w) || isNaN(h)) { alert('치수 값을 확인해주세요.'); return; }
+                const area = w * h;
+                qMin = 60 * vc * area;
+                subInfo = `개구면적 (A) = ${area.toFixed(1)} m² (W: ${w}m × H: ${h}m)`;
+            } else if (config.shape) {
+                const x = parseFloat(document.getElementById('x').value);
+                if (isNaN(x)) { alert('거리(X) 값을 확인해주세요.'); return; }
+                const shape = document.querySelector('input[name="hoodShape"]:checked').value;
+                let area = 0;
+
+                if (shape === 'rect') {
+                    const w = parseFloat(document.getElementById('w').value);
+                    const h = parseFloat(document.getElementById('h').value);
+                    if (isNaN(w) || isNaN(h)) { alert('개구부 가로/세로 값을 확인해주세요.'); return; }
+                    area = w * h;
+                } else {
+                    const d = parseFloat(document.getElementById('d').value);
+                    if (isNaN(d)) { alert('직경(D) 값을 확인해주세요.'); return; }
+                    area = (Math.PI * Math.pow(d, 2)) / 4;
+                }
+
+                const term = (10 * Math.pow(x, 2)) + area;
+                const multiplier = (type === 'flanged' || type === 'flangedMultipleSlot') ? 0.75 : 1.0;
+                qMin = 60 * multiplier * vc * term;
+                subInfo = `개구면적 (A) = ${area.toFixed(1)} m² | 거리 (X) = ${x} m`;
+            } else if (type === 'slot' || type === 'flangedSlot') {
+                const l = parseFloat(document.getElementById('l').value);
+                const x = parseFloat(document.getElementById('x').value);
+                if (isNaN(l) || isNaN(x)) { alert('입력값을 확인해주세요.'); return; }
+                const coeff = (type === 'slot') ? 3.7 : 2.6;
+                qMin = 60 * coeff * l * x * vc;
+                subInfo = `슬로트 길이 (L) = ${l} m | 거리 (X) = ${x} m`;
+            } else if (type === 'canopy') {
+                const p = parseFloat(document.getElementById('p').value);
+                const d = parseFloat(document.getElementById('d').value);
+                if (isNaN(p) || isNaN(d)) { alert('입력값을 확인해주세요.'); return; }
+                qMin = 60 * 1.4 * p * d * vc;
+                subInfo = `둘레 (P) = ${p} m | 거리 (D) = ${d} m`;
+            }
+
+            const qHour = qMin * 60;
+
+            document.getElementById('resMin').innerText = qMin.toFixed(1);
+            document.getElementById('resHour').innerText = qHour.toFixed(1);
+            document.getElementById('subResult').innerText = subInfo;
+        }
+
+        // 초기 실행
+        window.onload = function() {
+            onHoodTypeChange();
+        };
+    </script>
+</body>
+</html>
